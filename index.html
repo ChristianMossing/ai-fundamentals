@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="da">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hvad afslører din AI-brug om dig?</title>
+<style>
+  :root{
+    --bord:#8C1D2E; --bord-dark:#5E1320; --ink:#2A2A2A; --muted:#6B6B6B; --bg:#FAF7F6; --card:#FFFFFF; --line:#E8E1DF;
+    --D:#D7263D; --I:#F2B705; --S:#2E9E5B; --C:#1F6FD1;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;-webkit-text-size-adjust:100%}
+  .wrap{max-width:560px;margin:0 auto;padding:20px 18px 40px;min-height:100vh;display:flex;flex-direction:column}
+  header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+  .brand{font-weight:700;letter-spacing:.08em;color:var(--bord);font-size:13px;text-transform:uppercase}
+  .step{font-size:13px;color:var(--muted)}
+  .bar{height:6px;background:var(--line);border-radius:6px;overflow:hidden;margin-bottom:22px}
+  .bar>i{display:block;height:100%;background:var(--bord);width:0;transition:width .3s}
+  h1{font-size:28px;line-height:1.15;margin:6px 0 12px}
+  h2{font-size:22px;line-height:1.25;margin:0 0 16px}
+  p{line-height:1.5;margin:0 0 14px}
+  .muted{color:var(--muted);font-size:14px}
+  label{display:block;font-weight:600;margin:16px 0 6px}
+  input[type=text],textarea{width:100%;font:inherit;font-size:17px;padding:12px 14px;border:1.5px solid var(--line);border-radius:12px;background:#fff;color:var(--ink)}
+  textarea{min-height:130px;resize:vertical}
+  input:focus,textarea:focus{outline:none;border-color:var(--bord)}
+  .chips{display:flex;flex-wrap:wrap;gap:8px}
+  .chip{border:1.5px solid var(--line);background:#fff;border-radius:999px;padding:9px 16px;font:inherit;font-size:16px;color:var(--ink);cursor:pointer}
+  .chip.on{background:var(--bord);border-color:var(--bord);color:#fff}
+  .opts{display:flex;flex-direction:column;gap:10px}
+  .opt{text-align:left;border:1.5px solid var(--line);background:var(--card);border-radius:14px;padding:15px 16px;font:inherit;font-size:17px;line-height:1.35;color:var(--ink);cursor:pointer;transition:border-color .15s,background .15s}
+  .opt:active{transform:scale(.99)}
+  .opt.on{border-color:var(--bord);background:#F6E9EB}
+  .btn{display:block;width:100%;border:0;border-radius:14px;padding:16px;font:inherit;font-size:18px;font-weight:600;background:var(--bord);color:#fff;cursor:pointer;margin-top:22px}
+  .btn:disabled{opacity:.35;cursor:default}
+  .btn.ghost{background:transparent;color:var(--bord);border:1.5px solid var(--bord)}
+  .row{display:flex;gap:10px}.row .btn{margin-top:10px}
+  .spacer{flex:1}
+  .hint{background:#fff;border:1px dashed var(--line);border-radius:12px;padding:12px 14px;font-size:14px;color:var(--muted);margin-top:10px}
+  .result-letter{width:120px;height:120px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:64px;font-weight:800;color:#fff;margin:6px auto 14px}
+  .center{text-align:center}
+  .meter{margin:18px 0 6px}
+  .m{display:flex;align-items:center;gap:10px;margin:7px 0}
+  .m b{width:18px;text-align:center}
+  .m .t{flex:1;height:12px;background:var(--line);border-radius:8px;overflow:hidden}
+  .m .t i{display:block;height:100%;border-radius:8px}
+  .m span{width:36px;text-align:right;font-size:14px;color:var(--muted)}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;margin-top:14px}
+  .card h3{margin:0 0 6px;font-size:17px}
+  .verdict{font-weight:600}
+  .full{position:fixed;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;color:#fff;z-index:10;text-align:center;padding:20px}
+  .full.on{display:flex}
+  .full .big{font-size:42vw;font-weight:900;line-height:1}
+  .full .nick{font-size:28px;font-weight:700;margin-top:10px}
+  .full .tap{position:absolute;bottom:24px;font-size:14px;opacity:.85}
+  .ok{color:var(--S);font-weight:600}
+  footer{margin-top:28px;font-size:12px;color:var(--muted);text-align:center}
+</style>
+</head>
+<body>
+<div class="wrap" id="app"></div>
+<div class="full" id="full"></div>
+
+<script>
+(function(){
+  var COLORS={D:'var(--D)',I:'var(--I)',S:'var(--S)',C:'var(--C)'};
+  var NAMES={D:'Dominans',I:'Indflydelse',S:'Stabilitet',C:'Compliance'};
+  var TYPES={
+    D:{title:'Piloten',text:'Du bruger AI til at få ting fra hånden – hurtigt. Du vil have resultater, ikke snak, og du giver den gerne en rigtig opgave fra dag ét.',trap:'Faldgruben: Du stoler måske lidt for hurtigt på det første svar.'},
+    I:{title:'Gnisten',text:'Du leger, prøver grænser af og deler de sjoveste svar med kollegerne. For dig er AI en idémaskine og en god historie.',trap:'Faldgruben: Mange sjove forsøg – men lander de i rigtige opgaver?'},
+    S:{title:'Makkeren',text:'Du kommer i gang, når nogen har vist vejen, og du bruger AI trygt på de faste opgaver. Du er den, der får det til at holde i hverdagen.',trap:'Faldgruben: Du venter måske lidt for længe på grønt lys.'},
+    C:{title:'Kontrolløren',text:'Du vil forstå, hvordan den virker, og hvad man må, før du for alvor slipper den løs. Du fanger fejlene, andre overser.',trap:'Faldgruben: Du kan bruge mere tid på at tjekke end på at prøve.'}
+  };
+  var Q=[
+    {q:'Første gang du prøvede en sprogmodel (eller hvis du skulle prøve i morgen) – hvad gjorde du?',
+     o:[['D','Gav den en rigtig opgave med det samme for at se, om den kunne levere'],['I','Legede med den og viste kollegerne det sjoveste svar'],['S','Ventede, til en kollega havde vist mig, hvordan man gør'],['C','Læste lidt om, hvordan den virker – og hvad man må – før jeg prøvede']]},
+    {q:'Hvad irriterer dig mest ved AI?',
+     o:[['D','Når den er langsom eller pakker svaret ind i vat'],['I','Når den er kedelig og forudsigelig'],['S','At jeg ikke helt ved, om jeg gør det rigtigt – eller om jeg må'],['C','Når den tager fejl og samtidig lyder helt sikker']]},
+    {q:'Du får adgang til en ny AI-funktion i morgen. Hvad gør du?',
+     o:[['D','Bruger den på dagens vigtigste opgave'],['I','Trykker på alt og fortæller de andre om det'],['S','Venter på, at nogen laver en god guide'],['C','Tjekker reglerne og tester den på noget ufarligt']]},
+    {q:'Hvad ville du helst bruge AI til?',
+     o:[['D','At skære tid af de opgaver, der står i vejen for resultater'],['I','Brainstorm, idéer og at skrive mere levende'],['S','At gøre hverdagens faste opgaver lidt lettere'],['C','Analyse, gennemgang og kvalitetstjek']]},
+    {q:'Hvordan vil du helst lære at bruge AI?',
+     o:[['D','En kort intro – så vil jeg selv i gang'],['I','En workshop med andre – gerne lidt kaos'],['S','Sammen med en kollega, jeg er tryg ved'],['C','En grundig guide med eksempler og klare regler']]},
+    {q:'AI har lavet et udkast til en rapport til en kunde. Hvad gør du?',
+     o:[['D','Retter det vigtigste og sender – tid er penge'],['I','Gør det mere personligt og levende'],['S','Spørger en kollega, om det er godt nok'],['C','Tjekker hvert eneste tal og hver kilde']]}
+  ];
+  // shuffle option order once per question, so D is not always first
+  Q.forEach(function(x){for(var i=x.o.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=x.o[i];x.o[i]=x.o[j];x.o[j]=t;}});
+
+  var st={view:'intro',nick:'',disc:'',mbti:'',ans:[],free:''};
+  var app=document.getElementById('app'), full=document.getElementById('full');
+  var TOTAL=Q.length+3;
+
+  function h(tag,attrs,kids){var e=document.createElement(tag);if(attrs)for(var k in attrs){if(k==='class')e.className=attrs[k];else if(k==='text')e.textContent=attrs[k];else if(k.slice(0,2)==='on')e.addEventListener(k.slice(2),attrs[k]);else e.setAttribute(k,attrs[k]);}(kids||[]).forEach(function(c){if(c)e.appendChild(typeof c==='string'?document.createTextNode(c):c)});return e;}
+  function frame(stepNo,kids){
+    app.innerHTML='';
+    app.appendChild(h('header',null,[h('div',{class:'brand',text:'AI Fundamentals'}),h('div',{class:'step',text:stepNo?('Trin '+stepNo+' af '+TOTAL):''})]));
+    var b=h('div',{class:'bar'},[h('i')]);app.appendChild(b);
+    setTimeout(function(){b.firstChild.style.width=((stepNo||0)/TOTAL*100)+'%'},20);
+    kids.forEach(function(k){app.appendChild(k)});
+    app.appendChild(h('footer',{text:'Intet gemmes og intet sendes. Alt bliver på din telefon.'}));
+    window.scrollTo(0,0);
+  }
+
+  function mbtiToDisc(m){
+    m=(m||'').toUpperCase().replace(/[^A-Z]/g,'');
+    if(m.length<4)return '';
+    var E=m[0]==='E', T=m[2]==='T';
+    return E&&T?'D':E?'I':T?'C':'S';
+  }
+
+  function intro(){
+    frame(0,[
+      h('h1',{text:'Hvad afslører din AI-brug om dig?'}),
+      h('p',{text:'Seks spørgsmål om, hvordan du bruger – eller forventer at bruge – AI. Til sidst gætter appen på din DISC-profil.'}),
+      h('p',{class:'muted',text:'Arbejd to og to: Den ene læser spørgsmålet højt, den anden svarer. Så bytter I.'}),
+      h('div',{class:'spacer'}),
+      h('button',{class:'btn',text:'Kom i gang',onclick:function(){st.view='who';render()}})
+    ]);
+  }
+
+  function who(){
+    var nick=h('input',{type:'text',placeholder:'Fx Kaptajn Vand',maxlength:'30',value:st.nick});
+    nick.addEventListener('input',function(){st.nick=nick.value;go.disabled=!st.nick.trim()});
+    var chips=h('div',{class:'chips'});
+    ['D','I','S','C','Ved ikke'].forEach(function(v){
+      var key=v==='Ved ikke'?'':v;
+      var c=h('button',{class:'chip'+((st.disc===key&&st.discSet)?' on':''),text:v,onclick:function(){st.disc=key;st.discSet=true;[].forEach.call(chips.children,function(x){x.classList.remove('on')});c.classList.add('on')}});
+      chips.appendChild(c);
+    });
+    var mb=h('input',{type:'text',placeholder:'Fx ENFP (valgfrit)',maxlength:'4',value:st.mbti});
+    mb.addEventListener('input',function(){st.mbti=mb.value});
+    var go=h('button',{class:'btn',text:'Videre',onclick:function(){st.view='q';st.qi=0;render()}});
+    go.disabled=!st.nick.trim();
+    frame(1,[
+      h('h2',{text:'Hvem er du?'}),
+      h('label',{text:'Dit kaldenavn'}),nick,
+      h('p',{class:'muted',text:'Kun til dig selv og din makker – brug ikke dit rigtige navn.'}),
+      h('label',{text:'Kender du din DISC-profil? (primære farve)'}),chips,
+      h('label',{text:'…eller din MBTI-type?'}),mb,
+      h('div',{class:'spacer'}),go
+    ]);
+  }
+
+  function question(){
+    var i=st.qi, x=Q[i];
+    var next=h('button',{class:'btn',text:i===Q.length-1?'Videre':'Næste spørgsmål',onclick:function(){if(i<Q.length-1){st.qi++;}else{st.view='free';}render();}});
+    next.disabled=!st.ans[i];
+    var opts=h('div',{class:'opts'});
+    x.o.forEach(function(o){
+      var b=h('button',{class:'opt'+(st.ans[i]===o?' on':''),text:o[1],onclick:function(){st.ans[i]=o;[].forEach.call(opts.children,function(y){y.classList.remove('on')});b.classList.add('on');next.disabled=false;}});
+      opts.appendChild(b);
+    });
+    var back=h('button',{class:'btn ghost',text:'Tilbage',onclick:function(){if(i>0)st.qi--;else st.view='who';render();}});
+    frame(i+2,[
+      h('div',{class:'muted',text:'Spørgsmål '+(i+1)+' af '+Q.length}),
+      h('h2',{text:x.q}),opts,
+      h('p',{class:'muted',style:'margin-top:14px',text:'Passer ingen helt? Vælg den, der ligner dig mest.'}),
+      h('div',{class:'spacer'}),
+      h('div',{class:'row'},[back,next])
+    ]);
+  }
+
+  function free(){
+    var ta=h('textarea',{placeholder:'Fx "Jeg bruger Copilot til mails, men tør ikke bruge den på kundedata…"'});
+    ta.value=st.free;
+    ta.addEventListener('input',function(){st.free=ta.value});
+    frame(Q.length+2,[
+      h('h2',{text:'Sig det med dine egne ord'}),
+      h('p',{text:'Hvordan bruger du AI i dag – og hvad drømmer du om, at den kunne gøre for dig?'}),
+      ta,
+      h('div',{class:'hint',text:'Tip: Tryk på mikrofonen på dit tastatur og tal i stedet for at skrive. Det er valgfrit – men det gør næste trin sjovere.'}),
+      h('div',{class:'spacer'}),
+      h('div',{class:'row'},[
+        h('button',{class:'btn ghost',text:'Tilbage',onclick:function(){st.view='q';st.qi=Q.length-1;render()}}),
+        h('button',{class:'btn',text:'Se mit bud',onclick:function(){st.view='result';render()}})
+      ])
+    ]);
+  }
+
+  function score(){
+    var s={D:0,I:0,S:0,C:0};
+    st.ans.forEach(function(a,idx){if(a)s[a[0]]+=1+(idx*0.001)});
+    // tie-break: later answers weigh a hair more, so ties resolve deterministically
+    var order=['D','I','S','C'].sort(function(a,b){return s[b]-s[a]});
+    return {s:s,primary:order[0],secondary:s[order[1]]>=2?order[1]:''};
+  }
+
+  function copilotPrompt(r){
+    var lines=['Jeg har lige svaret på seks spørgsmål om, hvordan jeg bruger AI. Her er mine svar:',''];
+    Q.forEach(function(x,i){lines.push((i+1)+'. '+x.q);lines.push('   Mit svar: '+(st.ans[i]?st.ans[i][1]:'–'))});
+    if(st.free.trim()){lines.push('');lines.push('Med mine egne ord: "'+st.free.trim()+'"');}
+    lines.push('');
+    lines.push('Gæt min DISC-profil (D, I, S eller C) ud fra måden, jeg bruger AI på. Begrund kort og med et glimt i øjet, og giv mig ét konkret råd til, hvordan en med min profil kommer bedst i gang med AI. Svar på dansk, max 120 ord.');
+    return lines.join('\n');
+  }
+
+  function result(){
+    var r=score(), t=TYPES[r.primary];
+    var known=st.disc||mbtiToDisc(st.mbti), knownSrc=st.disc?'din DISC-profil':'din MBTI-type';
+    var meter=h('div',{class:'meter'});
+    ['D','I','S','C'].forEach(function(k){
+      var n=Math.round(r.s[k]);
+      var fill=h('i');fill.style.background=COLORS[k];fill.style.width='0';
+      meter.appendChild(h('div',{class:'m'},[h('b',{text:k}),h('div',{class:'t'},[fill]),h('span',{text:n+'/'+Q.length})]));
+      setTimeout(function(){fill.style.transition='width .6s';fill.style.width=(n/Q.length*100)+'%'},60);
+    });
+    var letter=h('div',{class:'result-letter',text:r.primary});letter.style.background=COLORS[r.primary];
+    var kids=[
+      h('div',{class:'center'},[h('div',{class:'muted',text:st.nick+', dit bud er…'}),letter,
+        h('h1',{style:'margin:0',text:t.title}),
+        h('div',{class:'muted',text:NAMES[r.primary]+(r.secondary?(' med et strejf af '+r.secondary):'')})]),
+      meter,
+      h('div',{class:'card'},[h('p',{text:t.text}),h('p',{style:'margin:0',class:'muted',text:t.trap})])
+    ];
+    if(known){
+      var hit=known===r.primary, near=known===r.secondary;
+      kids.push(h('div',{class:'card'},[h('h3',{text:'Ramte vi?'}),
+        h('p',{class:'verdict',style:'margin:0',text: hit?('Ja! Det passer med '+knownSrc+' ('+known+').'):near?('Tæt på – '+knownSrc+' siger '+known+', og den er din andenplads her.'):('Nej – '+knownSrc+' siger '+known+'. Måske afslører din AI-brug noget andet end din personlighed? Tag den med i snakken.')})]));
+    }
+    var copyBtn=h('button',{class:'btn ghost',text:'Kopiér prompt til Copilot',onclick:function(){
+      var txt=copilotPrompt(r);
+      var done=function(){copyBtn.textContent='Kopieret ✓ – indsæt i Copilot';};
+      try{navigator.clipboard.writeText(txt).then(done,function(){showText(txt)})}catch(e){showText(txt)}
+    }});
+    var raw=h('div');
+    function showText(txt){raw.innerHTML='';var ta=h('textarea',{readonly:'readonly'});ta.value=txt;ta.style.minHeight='200px';raw.appendChild(h('p',{class:'muted',text:'Kopiér teksten herunder manuelt:'}));raw.appendChild(ta);}
+    kids.push(h('div',{class:'card'},[h('h3',{text:'Anden mening: Hvad siger Copilot?'}),
+      h('p',{class:'muted',style:'margin:0',text:'Kopiér dine svar som en færdig prompt og spørg Copilot. Er I enige? Og læg mærke til: Nu forlod dine svar faktisk telefonen.'}),copyBtn,raw]));
+    kids.push(h('button',{class:'btn',text:'Hold telefonen op!',onclick:function(){showFull(r.primary)}}));
+    kids.push(h('button',{class:'btn ghost',text:'Start forfra (til din makker)',onclick:function(){st={view:'intro',nick:'',disc:'',mbti:'',ans:[],free:''};render()}}));
+    frame(TOTAL,kids);
+  }
+
+  function showFull(k){
+    full.innerHTML='';full.style.background=COLORS[k];
+    full.appendChild(h('div',{class:'big',text:k}));
+    full.appendChild(h('div',{class:'nick',text:TYPES[k].title}));
+    full.appendChild(h('div',{class:'tap',text:'Tryk for at lukke'}));
+    full.classList.add('on');
+    try{var p=full.requestFullscreen&&full.requestFullscreen();if(p&&p.catch)p.catch(function(){})}catch(e){}
+  }
+  full.addEventListener('click',function(){full.classList.remove('on');try{if(document.fullscreenElement)document.exitFullscreen()}catch(e){}});
+
+  function render(){({intro:intro,who:who,q:question,free:free,result:result})[st.view]();}
+  render();
+})();
+</script>
+</body>
+</html>
