@@ -138,7 +138,8 @@
       h('h2',{text:'Hvem er du?'}),
       h('label',{text:'Dit kaldenavn'}),nick,
       h('p',{class:'muted',text:'Kun til dig selv og din makker – brug ikke dit rigtige navn.'}),
-      h('label',{text:'Kender du din DISC-profil? (primære farve)'}),chips,
+      h('label',{text:'Kender du din DISC-profil? (bogstavet)'}),chips,
+      h('p',{class:'muted',style:'margin-top:8px',text:'Farverne varierer fra test til test – det er bogstavet, der tæller.'}),
       h('label',{text:'…eller din MBTI-type?'}),mb,
       h('div',{class:'spacer'}),go
     ]);
@@ -238,7 +239,7 @@
     full.innerHTML='';full.style.background=COLORS[k];
     full.appendChild(h('div',{class:'big',text:k}));
     full.appendChild(h('div',{class:'nick',text:TYPES[k].title}));
-    full.appendChild(h('div',{class:'tap',text:'Tryk for at lukke'}));
+    full.appendChild(h('div',{class:'tap',text:'Bogstavet tæller – ikke farven · Tryk for at lukke'}));
     full.classList.add('on');
     try{var p=full.requestFullscreen&&full.requestFullscreen();if(p&&p.catch)p.catch(function(){})}catch(e){}
   }
